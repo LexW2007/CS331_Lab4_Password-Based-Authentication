@@ -1,4 +1,4 @@
-# CS331 Project 1 Password System
+# CS331 Project 4 Password-Based Authentication
 
 ## Author: Lex Watts
 
@@ -28,7 +28,9 @@ Registration — unique usernames are required, password hashed with password_ha
 
 Login — verifies against the stored hash with password_verify().
 
-Password storage — all passwords and security-question answers are stored as hashes.
+Three consecuitive failures to login with an incorrect password temporarily locks that user's account.
+
+Password storage — all passwords and security-question answers are stored as hashes with a unique salt.
 
 Password reset — forgot_password.php implements a 3-step flow:
 
@@ -50,7 +52,7 @@ forgot_password.php — handles the password reset flow
 
 user_page.php — page shown after a successful login
 
-functions.php — shared password validation + security question list
+functions.php — shared password validation + security question list + hash and salt function
 
 config.php — database connection
 

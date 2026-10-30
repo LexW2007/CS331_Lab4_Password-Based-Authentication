@@ -29,4 +29,12 @@ function validatePassword($password) {
     return '';
 }
 
+define('MAX_FAILED_ATTEMPTS', 3);
+define('LOCKOUT_MINUTES', 15);
+
+// bcrypt: salted, adaptive hash. PHP generates a fresh random 128-bit salt which is embedded in the string.
+function hashSecret(string $plain): string {
+    return password_hash($plain, PASSWORD_BCRYPT, ['cost' => 12]);
+}
+
 ?>

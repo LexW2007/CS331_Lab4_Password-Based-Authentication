@@ -13,15 +13,17 @@ if (isset($_POST['find_user'])) {
     $result = $stmt->get_result();
 
     if ($result->num_rows > 0) {
-        $user = $result->fetch_assoc();
-        $_SESSION['reset_username'] = $username;
-        $_SESSION['reset_question'] = $user['security_question'];
-        $_SESSION['reset_stage'] = 'answer';
+        $question = $result->fetch_assoc()['security_question'];
     } else {
-        
-        $_SESSION['reset_error'] = "We couldn't find that account, or the answer didn't match. Please try again.";
-        $_SESSION['reset_stage'] = 'username';
+        $questions = getSecurityQuestions();
+        $index = hexdec(substr(hash('sha256', strtolower($username)), 0, 8)) % count($questions);
+        $question = $questions[$index];
     }
+
+    $_SESSION['reset_username'] = $username;
+    $_SESSION['reset_question'] = $question;
+    $_SESSION['reset_stage'] = 'answer';
+
     header("Location: forgot_password.php");
     exit();
 }
@@ -36,10 +38,14 @@ if (isset($_POST['verify_answer'])) {
     $result = $stmt->get_result();
 
     $verified = false;
+    $hashToCheck = null;
+
     if ($result->num_rows > 0) {
-        $user = $result->fetch_assoc();
-        $verified = password_verify($answer, $user['security_answer']);
+        $hashToCheck = $result->fetch_assoc()['security_answer'];
     }
+
+    $ok = password_verify($answer, $hashToCheck ?? hashSecret($answer));
+    $verified = ($hashToCheck !== null) && $ok;
 
     if ($verified) {
         $_SESSION['reset_stage'] = 'reset';
@@ -72,8 +78,12 @@ if (isset($_POST['reset_password'])) {
         $_SESSION['reset_error'] = $passwordError;
         $_SESSION['reset_stage'] = 'reset';
     } else {
-        $hashed = password_hash($newPassword, PASSWORD_DEFAULT);
-        $stmt = $conn->prepare("UPDATE allusers SET password = ? WHERE username = ?");
+        $hashed = hashSecret($newPassword);
+        $stmt = $conn->prepare(
+            "UPDATE allusers
+            SET password = ?, failed_attempts = 0, locked_until = NULL
+            WHERE username = ?"
+        );
         $stmt->bind_param("ss", $hashed, $username);
         $stmt->execute();
 
